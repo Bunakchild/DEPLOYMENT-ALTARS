@@ -1,0 +1,37 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-container {
+    max-width: 800px;
+    margin: auto;
+    text-align: center;
+}
+
+.metrics {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.metric {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin: 10px;
+    flex: 1 1 150px; /* Flexbox for responsive design */
+}
+
+.metric h2 {
+    font-size: 2em;
+    color: #333;
+}
+
+.metric p {
+    font-size: 1.2em;
+    color: #777;
+} 

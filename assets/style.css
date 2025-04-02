@@ -1,0 +1,129 @@
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
+  background-image: url('assets/pic/bglittle.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.home-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: white;
+}
+
+.image-container {
+  margin-bottom: 30px;
+}
+
+#library-logo {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+}
+
+.login-button-container {
+  margin-top: 20px;
+}
+
+#login-btn {
+  padding: 15px 30px;
+  font-size: 18px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#login-btn:hover {
+  background-color: #45a049;
+}
+
+
+
+.loading-indicator {
+    position: relative; /* Position relative for the sliding effect */
+    color: white; /* Text color */
+    padding: 10px 20px; /* Padding around the text */
+    border-radius: 5px; /* Rounded corners */
+    margin-top: 20px; /* Space between logo and loading text */
+    font-size: 16px; /* Font size */
+    text-align: center; /* Center the text */
+    width: fit-content; /* Adjust width to fit content */
+    overflow: hidden; /* Hide overflow for the sliding effect */
+    background: linear-gradient(90deg, rgba(0, 128, 0, 0.7), rgba(0, 255, 0, 0.7)); /* Gradient background */
+    background-size: 200% 100%; /* Double the width for animation */
+    animation: slide 3s linear infinite; /* Apply the slide animation */
+}
+
+/* Keyframe animation for sliding effect */
+@keyframes slide {
+    0% {
+        background-position: 100% 0; /* Start from the right */
+    }
+    100% {
+        background-position: 0 0; /* Move to the left */
+    }
+}
+
+.loading-battery {
+    position: relative; /* Position relative for the inner fill */
+    width: 200px; /* Width of the battery */
+    height: 30px; /* Height of the battery */
+    border: 2px solid #ccc; /* Border for the battery */
+    border-radius: 5px; /* Rounded corners */
+    overflow: hidden; /* Hide overflow for the fill */
+    margin-top: 20px; /* Space between logo and loading text */
+}
+
+.battery-fill {
+    position: absolute; /* Position absolutely within the battery */
+    background-color: rgba(245, 22, 22, 0.7); /* Green color for the fill */
+    height: 100%; /* Full height of the battery */
+    width: 0; /* Start with no fill */
+    animation: charge 3s linear infinite; /* Apply the charging animation */
+}
+
+/* Keyframe animation for charging effect */
+@keyframes charge {
+    0% {
+        width: 0; /* Start with no fill */
+    }
+    50% {
+        width: 50%; /* Fill the battery */
+    }
+    100% {
+        width: 100%; /* Reset to no fill */
+    }
+}
+
+.loading-battery span {
+    position: absolute; /* Center the text */
+    top: 50%; /* Center vertically */
+    left: 50%; /* Center horizontally */
+    transform: translate(-50%, -50%); /* Adjust for centering */
+    color: black; /* Text color */
+    font-size: 14px; /* Font size */
+}
