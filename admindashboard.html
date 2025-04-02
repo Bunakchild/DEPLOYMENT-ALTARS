@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="assets/adminstyle.css">
+    <link rel="stylesheet" href="assets/dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <!-- <link rel="stylesheet" href="assets/history.css"> -->
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 400px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            cursor: pointer;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        /* Remove spinner buttons for Webkit browsers (Chrome, Safari, etc.) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        button[type="submit"] {
+            background-color: #f44336;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #f44336;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        #qrCodeCanvas {
+            margin-top: 15px;
+        }
+
+        .book-form, .student-form {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        
+        .remove-form {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            float: right;
+        }
+        
+        button[type="button"] {
+            margin: 10px 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        #printContainer {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            padding: 20px;
+            background: white;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printContainer, #printContainer * {
+                visibility: visible;
+            }
+            #printContainer {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .qr-item {
+                page-break-inside: avoid;
+                margin-bottom: 20px;
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+            }
+            .qr-info {
+                margin-bottom: 10px;
+            }
+            .qr-image {
+                width: 150px;
+                height: 150px;
+            }
+        }
+
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+            background: white;
+        }
+
+        .qr-item {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            background: white;
+            page-break-inside: avoid;
+        }
+
+        .qr-info {
+            margin: 10px 0;
+        }
+
+        .qr-image {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+
+        .modal-content.info {
+            border-left: 5px solid #2196F3;
+        }
+        .modal-content.success {
+            border-left: 5px solid #28a745;
+        }
+        .modal-content.error {
+            border-left: 5px solid #28a745;
+        }
+
+        /* Add styles for returned section */
+        .returned-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .returned-table th,
+        .returned-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .returned-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .returned-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .returned-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .returned-table td:nth-child(7) {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        #returnedContent {
+            padding: 20px;
+        }
+
+        #returnedContent .page-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #returnedContent .page-header img {
+            margin-right: 10px;
+        }
+
+        #returnedContent .action-buttons {
+            margin-bottom: 20px;
+        }
+
+        #returnedContent .search-bar {
+            width: 300px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #returnedContent .search-bar:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        /* Add these styles to your existing CSS */
+        .sortable {
+            cursor: pointer;
+            position: revert;
+            padding-right: 25px;
+            -webkit-user-select: none;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .sortable:hover {
+            background-color: #b42f2f;
+        }
+
+        .sortable:after {
+            content: '↕';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #ffffff;
+            opacity: 0.5;
+        }
+
+        .sortable.asc:after {
+            content: '↑';
+            color: #ffffff;
+            opacity: 1;
+            font-size: 18px;
+        }
+
+        .sortable.desc:after {
+            content: '↓';
+            color: #ffffff;
+            opacity: 1;
+            font-size: 18px;
+        }
+
+        .books-table th {
+            -webkit-user-select: none;
+            user-select: none;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            padding: 12px 15px;
+            text-align: center;
+            background-color: #d66767;
+            color: white;
+        }
+
+        .books-table th:not(.sortable) {
+            cursor: default;
+        }
+
+        .edit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .edit-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Add this new style for the table cell containing the edit button */
+        .books-table td:last-child {
+            text-align: center;
+        }
+
+        #editBookModal button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        #editBookModal button:hover {
+            background-color: #45a049;
+        }
+
+        /* Add custom styles for select elements */
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: #fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23666' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 12px center;
+            background-size: 16px;
+            padding: 8px 32px 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 10px;
+            min-width: 150px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        select:hover {
+            border-color: #999;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        select option {
+            padding: 8px;
+            background-color: #fff;
+        }
+
+        /* Style for select container */
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Add a label for better accessibility */
+        .filter-label {
+            font-size: 14px;
+            color: #666;
+            margin-right: 5px;
+        }
+
+        .search-bar {
+            width: 300px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+
+        /* Add styles for overdue section */
+        .overdue-section {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .overdue-section h3 {
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+
+        .overdue-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .overdue-table th,
+        .overdue-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .overdue-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .overdue-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .overdue-table td:last-child {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        /* Add these styles for the active menu item */
+        .menu-item.active {
+            background-color: #f7db9a; /* Yellow background */
+            color: #000; /* Black text for better contrast */
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-item.active img {
+            filter: brightness(0.8); /* Slightly darken the icon for better contrast */
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="admin-info">
+            <img src="assets/pic/logonglittleheirs.jpg" alt="Admin">
+            <h4> ADMIN </h4>
+        </div>
+        
+            <div class="menu-item" onclick="Dashboard()" id="dashboard-menu"> <img src="assets/icons/dashboards.png" alt="Dashboard" class="menu-icon">Dashboard</div>
+            <div class="menu-item" onclick="Members()" id="members-menu"> <img src="assets/icons/student.png" alt="Student" class="menu-icon">Students</div>
+            <div class="menu-item" onclick="showBooks()" id="books-menu"> <img src="assets/icons/book.png" alt="Book" class="menu-icon">Books</div>
+            <div class="menu-item" onclick="showHistory()" id="history-menu"> <img src="assets/icons/history-book.png" alt="History" class="menu-icon">History</div>
+            <div class="menu-item" onclick="Borrowed()" id="borrowed-menu"> <img src="assets/icons/borrow.png" alt="Borrowed" class="menu-icon">Borrow Book</div>
+            <div class="menu-item" onclick="Returned()" id="returned-menu"> <img src="assets/icons/return.png" alt="Returned" class="menu-icon">Return Book</div>
+            <div class="menu-item" onclick="logout()" id="logout-menu"> <img src="assets/icons/logout.png" alt="Logout" class="menu-icon">Log Out</div>
+        
+    </div>
+    <div class="main-content" id="dashboardAdmin">
+        <div class="page-header">
+            <h1>Admin Dashboard</h1>
+        </div> 
+        <div class="dashboard-container">
+            <div class="metrics">
+                <div class="metric">
+                    <h2 id="total-students">0</h2>
+                    <p>Total Students</p>
+                </div>
+                <div class="metric">
+                    <h2 id="total-books">0</h2>
+                    <p>Total Books</p>
+                </div>
+                <div class="metric">
+                    <h2 id="total-borrowed">0</h2>
+                    <p>Total Borrowed Books</p>
+                </div>
+                <div class="metric">
+                    <h2 id="returned-books">0</h2>
+                    <p>Returned Books</p>
+                </div>
+                <div class="metric">
+                    <h2 id="pending-books">0</h2>
+                    <p>Pending Books</p>
+                </div>
+            </div>
+            <div id="overdueBooks" class="overdue-section">
+                <!-- Overdue books will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content" id="dashboardContent">
+        <div class="page-header">
+            <img src="assets/icons/student.png" alt="Student" class="menu-icon">
+            <h2>Students Information</h2>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="addStudent()" id="addStudent-btn">Add Students</button>
+            <button id="openDeleteModal-btn">Delete</button>
+            <button onclick="exportToExcel()" id="export-excel-btn" style="font-size: small;">Export to Excel</button>
+            <input class="search-bar" type="text" id="studentSearch" placeholder="Search Students..." oninput="searchStudents()">
+        </div>
+        <table class="student-table">
+            <thead>
+                <tr>
+                    <th>Student No.</th>
+                    <th>Student Name</th>
+                    <th>User Name</th>
+                    <th>Phone No.</th>
+                    <th>Password</th>
+                    <th>Email</th>
+                    <th>Points</th>
+                    <th>Qr Code</th>
+                    
+                </tr>
+            </thead>
+            <tbody id="studentList">
+                <!-- <tr>
+                    <td>1</td>
+                    <td>John Doe</td>
+                    <td>STU123456</td>
+                    <td>50</td>
+                </tr> -->
+            </tbody>
+        </table>
+        
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Add Students</h2>
+            <div id="studentForms">
+                <div class="student-form">
+                    <label for="name_0">Name:</label>
+                    <input type="text" id="name_0" name="name" required>
+
+                    <label for="username_0">Username:</label>
+                    <input type="text" id="username_0" name="username" required>
+
+                    <label for="password_0">Password:</label>
+                    <input type="password" id="password_0" name="password" required>
+
+                    <label for="cellphone_0">Cellphone Number:</label>
+                    <div style="display: flex; align-items: center;">
+                        <span style="padding: 8.5px; background-color: #f5f5f5; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px;">+639</span>
+                        <input type="text" 
+                            id="cellphone_0" 
+                            name="cellphone" 
+                            required 
+                            pattern="[0-9]{9}"
+                            maxlength="9"
+                            style="border-left: none; border-radius: 0 4px 4px 0; margin-bottom: 0;"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            placeholder="Enter 9 digits"
+                            title="Please enter 9 digits after +639">
+                    </div>
+                    <label for="email_0">Email:</label>
+                    <input type="email" id="email_0" name="email" placeholder="Enter email address">
+                </div>
+            </div>
+            <button type="button" onclick="addMoreStudentFields()">Add Another Student</button>
+            <button type="button" onclick="submitStudents()">Submit All Students</button>
+        </div>
+    </div>
+
+    <!-- Add this new books content section -->
+    <div class="main-content" id="booksContent">
+        <div class="page-header">
+            <img src="assets/icons/book.png" alt="Book" class="menu-icon">
+            <h2>Books Information</h2>
+        </div>
+        <div class="action-buttons">
+            <button onclick="addBook()">Add Book</button>
+            <button id="openDeleteBookModal-btn">Delete</button>
+            <button onclick="exportBooksToExcel()" id="export-books-excel-btn" style="font-size: 13px;">Export to Excel</button>
+            <input class="search-bar" type="text" id="bookSearch" placeholder="Search by Book Name ..." oninput="searchBooks()">
+        </div>
+        <table class="books-table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="id">Book ID</th>
+                    <th class="sortable" data-sort="isbn">ISBN</th>
+                    <th class="sortable" data-sort="name">Book Name</th>
+                    <th class="sortable" data-sort="author">Author</th>
+                    <th class="sortable" data-sort="publication_year">Publication Year</th>
+                    <th class="sortable" data-sort="category">Category</th>
+                    <th class="sortable" data-sort="language">Language</th>
+                    <th class="sortable" data-sort="shelf_location">Shelf Location</th>
+                    <th class="sortable" data-sort="copies_available">Copies Available</th>
+                    <th class="sortable" data-sort="number_of_page">Number of Pages</th>
+                    <th class="sortable" data-sort="tags">Tags</th>
+                    <th>Book Cover</th>
+                    <th>QR Code</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add this new modal -->
+    <div id="addBookModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookModal()">&times;</span>
+            <h2>Add Books</h2>
+            <div>
+                <button type="button" onclick="addMoreBookFields()">Add Another Book</button>
+                <button type="button" onclick="submitBooks()">Submit All Books</button>
+            </div>  
+            <div id="bookForms">
+                <div class="book-form">
+                    <label for="isbn_0">ISBN:</label>
+                    <input type="text" id="isbn_0" name="isbn" required>
+    
+                    <label for="bookName_0">Book Name:</label>
+                    <input type="text" id="bookName_0" name="bookName" required>
+    
+                    <label for="author_0">Author:</label>
+                    <input type="text" id="author_0" name="author" required>
+    
+                    <label for="publicationYear_0">Publication Year:</label>
+                    <input type="number" id="publicationYear_0" name="publicationYear" min="1000" max="9999" step="1" placeholder="YYYY" oninput="validateYear(this)" maxlength="4">
+    
+                    <label for="category_0">Category:</label>
+                    <input type="text" id="category_0" name="category">
+    
+                    <label for="language_0">Language:</label>
+                    <input type="text" id="language_0" name="language">
+    
+                    <label for="shelfLocation_0">Shelf Location:</label>
+                    <input type="text" id="shelfLocation_0" name="shelfLocation">
+    
+                    <label for="copiesAvailable_0">Copies Available:</label>
+                    <input type="number" id="copiesAvailable_0" name="copiesAvailable">
+    
+                    <label for="numberOfPages_0">Number of Pages:</label>
+                    <input type="number" id="numberOfPages_0" name="numberOfPages">
+
+                    <label for="tags_0">Tags (comma-separated):</label>
+                    <input type="text" id="tags_0" name="tags" placeholder="e.g., Fiction, Mystery, Adventure">
+
+                    <label for="bookImage_0">Book Cover Image:</label>
+                    <input type="file" id="bookImage_0" name="bookImage" accept="image/*" onchange="previewImage(this)">
+                    <div id="imagePreview_0" class="image-preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Add this new modal for PDF preview -->
+    <div id="pdfPreviewModal" class="modal">
+        <div class="modal-content" style="width: 80%; max-width: 1000px;">
+            <span class="close" onclick="document.getElementById('pdfPreviewModal').style.display='none'">&times;</span>
+            <h2>QR Codes Preview</h2>
+            <div id="pdfPreview" style="max-height: 70vh; overflow-y: auto;"></div>
+            <div style="margin-top: 15px; text-align: center;">
+                <button onclick="downloadPDF()" style="margin-right: 10px;">Download PDF</button>
+                <button onclick="printPDF()">Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modify the printContainer styles -->
+    <div id="printContainer">
+        <style>
+            .qr-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .qr-item {
+                padding: 15px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                text-align: center;
+                background: white;
+                page-break-inside: avoid;
+            }
+
+            .qr-info {
+                margin: 10px 0;
+            }
+
+            .qr-image {
+                width: 150px;
+                height: 150px;
+                margin: 0 auto;
+            }
+
+            @media print {
+                .modal {
+                    display: none;
+                }
+            }
+        </style>
+        <div class="qr-grid" id="qrList"></div>
+    </div>
+
+    <!-- History -->
+    <div class="main-content" id="fetch-history" style="display: none;">
+        <div class="page-header">
+            <img src="assets/icons/history-book.png" alt="History" class="menu-icon">
+            <h2>Borrowing History</h2>
+        </div>
+        <div class="action-buttons">
+            <select id="yearFilter" onchange="filterHistoryByDate()">
+                <option value="all">All Years</option>
+                <script>
+                    const currentYear = new Date().getFullYear();
+                    const startYear = 2024;
+                    const endYear = currentYear; // Add 100 years to current year
+                    
+                    for (let year = endYear; year >= startYear; year--) {
+                        document.write(`<option value="${year}">${year}</option>`);
+                    }
+                </script>
+            </select>
+            <select id="monthFilter" onchange="filterHistoryByDate()">
+                <option value="all">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            
+            <button onclick="exportHistoryToExcel()" id="export-history-excel-btn" style="font-size: 13px;">Export to Excel</button>
+            <input class="search-bar" type="text" id="historySearch" placeholder="Search History..." oninput="searchHistory()">
+        </div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Username</th>
+                    <th>Book ID</th>
+                    <th>Book Name</th>
+                    <th>Borrow Date</th>
+                    <th>Due Date</th>
+                    <th>Return Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Modal for Deleting a Student -->
+    <div id="deleteStudentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDeleteModal">&times;</span>
+            <h2>Delete Student</h2>
+            <input type="text" id="deleteStudentId" placeholder="Enter Student ID or Name" required>
+            <button onclick="deleteStudent()" id='deleteStudent-btn'>Delete</button>
+        </div>
+    </div>
+    <!-- Modal for displaying messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+    <!-- Add this new modal for deleting a book -->
+    <div id="deleteBookModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeDeleteBookModal">&times;</span>
+            <h2>Delete Book</h2>
+            <input type="text" id="deleteBookId" placeholder="Enter Book ID or Name" required>
+            <button onclick="deleteBook()" id='deleteBook-btn'>Delete</button>
+        </div>
+    </div>
+    <!-- Add this new returned content section -->
+    <div class="main-content" id="returnedContent" style="display: none;">
+        <div class="page-header">
+            <img src="assets/icons/return.png" alt="Returned" class="menu-icon">
+            <h2>Returned Books</h2>
+        </div>
+        <div class="action-buttons">
+            <input class="search-bar" type="text" id="returnedSearch" placeholder="Search Returned Books..." oninput="searchReturned()">
+        </div>
+        <table class="returned-table">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Book ID</th>
+                    <th>Book Name</th>
+                    <th>Borrow Date</th>
+                    <th>Return Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+    
+        const HISTORY_API_URL = "http://localhost:5000/api/history";
+
+        function formatDate(dateString) {
+            if (!dateString) return 'No due date';
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', options);
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch(HISTORY_API_URL);
+                const history = await response.json();
+                storedHistoryData = history;
+
+                // Set current year as default in the year filter
+                const currentYear = new Date().getFullYear();
+                const yearFilter = document.getElementById('yearFilter');
+                yearFilter.value = currentYear.toString();
+
+                const tbody = document.querySelector('.history-table tbody');
+                tbody.innerHTML = '';
+
+                history.forEach((record) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.student_id}</td>
+                        <td>${record.student_name}</td>
+                        <td>${record.username}</td>
+                        <td>${record.book_id}</td>
+                        <td>${record.book_name}</td>
+                        <td>${formatDate(record.borrow_date)}</td>
+                        <td>${formatDate(record.due_date)}</td>
+                        <td>${record.return_date ? formatDate(record.return_date) : 'Not Returned'}</td>
+                        <td>${record.status}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Apply initial filter
+                filterHistoryByDate();
+            } catch (error) {
+                console.error("Error fetching history:", error);
+                showModal('Error fetching history data', 'error');
+            }
+        }
+
+        // Call fetchHistory when the History section is shown
+        function showHistory() {
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('fetch-history').style.display = 'block';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            fetchHistory(); // Fetch history data when this section is shown
+        }
+
+        // Search functionality
+        function searchHistory() {
+            const input = document.getElementById('historySearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.history-table tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+    
+        function logout() {
+            
+            window.location.href = 'login.html';
+        }
+
+        function addStudent() {
+            document.getElementById('addStudentModal').style.display = 'block';
+            //document.getElementById('error-message').innerText = ''; // Clear error message
+        }
+
+        function closeModal() {
+            document.getElementById('addStudentModal').style.display = 'none';
+        }
+
+        const API_BASE_URL = "http://localhost:5000/api/students";
+
+        let storedStudentData = []; // Add this at the top of your script section
+
+        // Function to fetch and display students
+        async function fetchStudents() {
+            try {
+                const response = await fetch('http://localhost:5000/api/students');
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch students');
+                }
+
+                const studentList = document.getElementById('studentList');
+                studentList.innerHTML = ''; // Clear existing list
+
+                if (!data.students || data.students.length === 0) {
+                    studentList.innerHTML = '<tr><td colspan="6" style="text-align: center;">No students found</td></tr>';
+                    return;
+                }
+
+                data.students.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${student.name}</td>
+                        <td>${student.username}</td>
+                        <td>${student.cellphone || 'N/A'}</td>
+                        <td>${student.email || 'N/A'}</td>
+                        <td>${student.points || 0}</td>
+                        <td>
+                            <button onclick="showQRCode('${student.qr_code}')" class="action-button view-qr">View QR</button>
+                            <button onclick="deleteStudent(${student.id})" class="action-button delete">Delete</button>
+                        </td>
+                    `;
+                    studentList.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching students:', error);
+                showModal('Failed to fetch students: ' + error.message, 'error');
+            }
+        }
+
+        window.onclick = function(event) {
+            const studentModal = document.getElementById('deleteStudentModal');
+            const bookModal = document.getElementById('deleteBookModal');
+            const messageModal = document.getElementById('messageModal');
+            const addStudentModal = document.getElementById('addStudentModal');
+            
+            if (event.target === studentModal) {
+                studentModal.style.display = 'none';
+            }
+            if (event.target === bookModal) {
+                bookModal.style.display = 'none';
+            }
+            if (event.target === messageModal) {
+                messageModal.style.display = 'none';
+            }
+            if (event.target === addStudentModal) {
+                closeModal();
+            }
+        }
+
+        let bookFormCount = 1;
+        let studentFormCount = 1;
+
+        function addMoreBookFields() {
+            const container = document.getElementById('bookForms');
+            const newForm = document.createElement('div');
+            newForm.className = 'book-form';
+            newForm.innerHTML = `
+                <button type="button" class="remove-form" onclick="this.parentElement.remove()">Remove</button>
+                <label for="bookName_${bookFormCount}">Book Name:</label>
+                <input type="text" id="bookName_${bookFormCount}" name="bookName" required>
+
+                <label for="author_${bookFormCount}">Author:</label>
+                <input type="text" id="author_${bookFormCount}" name="author" required>
+
+                <label for="isbn_${bookFormCount}">ISBN:</label>
+                <input type="text" id="isbn_${bookFormCount}" name="isbn">
+
+                <label for="publicationYear_${bookFormCount}">Publication Year:</label>
+                <input type="number" id="publicationYear_${bookFormCount}" name="publicationYear" min="1000" max="9999" step="1" placeholder="YYYY" oninput="validateYear(this)" maxlength="4">
+
+                <label for="category_${bookFormCount}">Category:</label>
+                <input type="text" id="category_${bookFormCount}" name="category">
+
+                <label for="language_${bookFormCount}">Language:</label>
+                <input type="text" id="language_${bookFormCount}" name="language">
+
+                <label for="shelfLocation_${bookFormCount}">Shelf Location:</label>
+                <input type="text" id="shelfLocation_${bookFormCount}" name="shelfLocation">
+
+                <label for="copiesAvailable_${bookFormCount}">Copies Available:</label>
+                <input type="number" id="copiesAvailable_${bookFormCount}" name="copiesAvailable">
+
+                <label for="numberOfPages_${bookFormCount}">Number of Pages:</label>
+                <input type="number" id="numberOfPages_${bookFormCount}" name="numberOfPages">
+
+                <label for="tags_${bookFormCount}">Tags (comma-separated):</label>
+                <input type="text" id="tags_${bookFormCount}" name="tags" placeholder="e.g., Fiction, Mystery, Adventure">
+
+                <label for="bookImage_${bookFormCount}">Book Cover Image:</label>
+                <input type="file" id="bookImage_${bookFormCount}" name="bookImage" accept="image/*" onchange="previewImage(this)">
+                <div id="imagePreview_${bookFormCount}" class="image-preview"></div>
+            `;
+            container.appendChild(newForm);
+            bookFormCount++;
+        }
+
+        function addMoreStudentFields() {
+            const container = document.getElementById('studentForms');
+            const newForm = document.createElement('div');
+            newForm.className = 'student-form';
+            newForm.innerHTML = `
+                <button type="button" class="remove-form" onclick="this.parentElement.remove()">Remove</button>
+                <label for="name_${studentFormCount}">Name:</label>
+                <input type="text" id="name_${studentFormCount}" name="name" required>
+
+                <label for="username_${studentFormCount}">Username:</label>
+                <input type="text" id="username_${studentFormCount}" name="username" required>
+
+                <label for="password_${studentFormCount}">Password:</label>
+                <input type="password" id="password_${studentFormCount}" name="password" required>
+
+                <label for="cellphone_${studentFormCount}">Cellphone Number:</label>
+                <div style="display: flex; align-items: center;">
+                    <span style="padding: 10px; background-color: #f5f5f5; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px;">+639</span>
+                    <input type="text" 
+                        id="cellphone_${studentFormCount}" 
+                        name="cellphone" 
+                        required 
+                        pattern="[0-9]{9}"
+                        maxlength="9"
+                        style="border-left: none; border-radius: 0 4px 4px 0; margin-bottom: 0;"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                        placeholder="Enter 9 digits"
+                        title="Please enter 9 digits after +639">
+                </div>
+            `;
+            container.appendChild(newForm);
+            studentFormCount++;
+        }
+
+        async function submitBooks() {
+            const bookForms = document.getElementsByClassName("book-form");
+            const books = [];
+
+            for (let form of bookForms) {
+                const nameInput = form.querySelector('input[name="bookName"]');
+                const authorInput = form.querySelector('input[name="author"]');
+                const isbnInput = form.querySelector('input[name="isbn"]');
+                const pubYearInput = form.querySelector('input[name="publicationYear"]');
+                const categoryInput = form.querySelector('input[name="category"]');
+                const languageInput = form.querySelector('input[name="language"]');
+                const shelfInput = form.querySelector('input[name="shelfLocation"]');
+                const copiesInput = form.querySelector('input[name="copiesAvailable"]');
+                const pagesInput = form.querySelector('input[name="numberOfPages"]');
+                const tagsInput = form.querySelector('input[name="tags"]');
+                const imageInput = form.querySelector('input[name="bookImage"]');
+
+                if (nameInput.value && authorInput.value) {
+                    const bookData = {
+                        name: nameInput.value,
+                        author: authorInput.value,
+                        isbn: isbnInput.value || null,
+                        publicationYear: pubYearInput.value ? parseInt(pubYearInput.value) : null,
+                        category: categoryInput.value || null,
+                        language: languageInput.value || null,
+                        shelfLocation: shelfInput.value || null,
+                        copiesAvailable: copiesInput.value ? parseInt(copiesInput.value) : null,
+                        numberOfPages: pagesInput.value ? parseInt(pagesInput.value) : null,
+                        tags: tagsInput.value || null
+                    };
+
+                    // Add image file if selected
+                    if (imageInput.files && imageInput.files[0]) {
+                        try {
+                            const imageFile = imageInput.files[0];
+                            const base64String = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result);
+                                reader.onerror = reject;
+                                reader.readAsDataURL(imageFile);
+                            });
+                            bookData.image_url = base64String;
+                        } catch (error) {
+                            console.error("Error converting image to base64:", error);
+                        }
+                    }
+
+                    books.push(bookData);
+                }
+            }
+
+            if (books.length === 0) {
+                return;
+            }
+
+            try {
+                const result = await window.electronAPI.addBooks(books);
+                if (result.success) {
+                    // Reset the form
+                    const container = document.getElementById("bookForms");
+                    container.innerHTML = `
+                        <div class="book-form">
+                            <label for="isbn_0">ISBN:</label>
+                            <input type="text" id="isbn_0" name="isbn" required>
+
+                            <label for="bookName_0">Book Name:</label>
+                            <input type="text" id="bookName_0" name="bookName" required>
+
+                            <label for="author_0">Author:</label>
+                            <input type="text" id="author_0" name="author" required>
+
+                            <label for="publicationYear_0">Publication Year:</label>
+                            <input type="number" id="publicationYear_0" name="publicationYear" min="1000" max="9999" step="1" placeholder="YYYY" oninput="validateYear(this)" maxlength="4">
+
+                            <label for="category_0">Category:</label>
+                            <input type="text" id="category_0" name="category">
+
+                            <label for="language_0">Language:</label>
+                            <input type="text" id="language_0" name="language">
+
+                            <label for="shelfLocation_0">Shelf Location:</label>
+                            <input type="text" id="shelfLocation_0" name="shelfLocation">
+
+                            <label for="copiesAvailable_0">Copies Available:</label>
+                            <input type="number" id="copiesAvailable_0" name="copiesAvailable">
+
+                            <label for="numberOfPages_0">Number of Pages:</label>
+                            <input type="number" id="numberOfPages_0" name="numberOfPages">
+
+                            <label for="tags_0">Tags (comma-separated):</label>
+                            <input type="text" id="tags_0" name="tags" placeholder="e.g., Fiction, Mystery, Adventure">
+
+                            <label for="bookImage_0">Book Cover Image:</label>
+                            <input type="file" id="bookImage_0" name="bookImage" accept="image/*" onchange="previewImage(this)">
+                            <div id="imagePreview_0" class="image-preview"></div>
+                        </div>
+                    `;
+                    bookFormCount = 1;
+
+                    // Close modal
+                    closeBookModal();
+
+                    // Fetch updated books list
+                    await fetchBooks();
+                } else {
+                    alert("Error adding books: " + result.error);
+                }
+            } catch (error) {
+                console.error("Error adding books:", error);
+                alert("Error adding books: " + error);
+            }
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview_' + input.id.split('_')[1]);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 200px;">`;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function closeBookModal() {
+            const modal = document.getElementById('addBookModal');
+            modal.style.display = 'none';
+            
+            // Reset the form
+            const container = document.getElementById('bookForms');
+            container.innerHTML = `
+                <div class="book-form">
+                    <label for="isbn_0">ISBN:</label>
+                    <input type="text" id="isbn_0" name="isbn" required>
+    
+                    <label for="bookName_0">Book Name:</label>
+                    <input type="text" id="bookName_0" name="bookName" required>
+    
+                    <label for="author_0">Author:</label>
+                    <input type="text" id="author_0" name="author" required>
+    
+                    <label for="publicationYear_0">Publication Year:</label>
+                    <input type="number" id="publicationYear_0" name="publicationYear" min="1000" max="9999" step="1" placeholder="YYYY" oninput="validateYear(this)" maxlength="4">
+    
+                    <label for="category_0">Category:</label>
+                    <input type="text" id="category_0" name="category">
+    
+                    <label for="language_0">Language:</label>
+                    <input type="text" id="language_0" name="language">
+    
+                    <label for="shelfLocation_0">Shelf Location:</label>
+                    <input type="text" id="shelfLocation_0" name="shelfLocation">
+    
+                    <label for="copiesAvailable_0">Copies Available:</label>
+                    <input type="number" id="copiesAvailable_0" name="copiesAvailable">
+    
+                    <label for="numberOfPages_0">Number of Pages:</label>
+                    <input type="number" id="numberOfPages_0" name="numberOfPages">
+
+                    <label for="tags_0">Tags (comma-separated):</label>
+                    <input type="text" id="tags_0" name="tags" placeholder="e.g., Fiction, Mystery, Adventure">
+
+                    <label for="bookImage_0">Book Cover Image:</label>
+                    <input type="file" id="bookImage_0" name="bookImage" accept="image/*" onchange="previewImage(this)">
+                    <div id="imagePreview_0" class="image-preview"></div>
+                </div>
+            `;
+            bookFormCount = 1;
+        }
+
+        async function submitStudents() {
+            const studentForms = document.getElementsByClassName("student-form");
+            const students = [];
+
+            for (let form of studentForms) {
+                const nameInput = form.querySelector('input[name="name"]');
+                const usernameInput = form.querySelector('input[name="username"]');
+                const passwordInput = form.querySelector('input[name="password"]');
+                const cellphoneInput = form.querySelector('input[name="cellphone"]');
+                const emailInput = form.querySelector('input[name="email"]');
+
+                // Check if all required fields are filled
+                if (!nameInput?.value || !usernameInput?.value || !passwordInput?.value || !cellphoneInput?.value || !emailInput?.value) {
+                    showModal('Please fill in all required fields for each student', 'error');
+                    return;
+                }
+
+                students.push({
+                    name: nameInput.value,
+                    username: usernameInput.value,
+                    password: passwordInput.value,
+                    cellphone: '+639' + cellphoneInput.value,
+                    email: emailInput.value
+                });
+            }
+
+            if (students.length === 0) {
+                showModal('No student data to submit', 'error');
+                return;
+            }
+
+            try {
+                for (const student of students) {
+                    const response = await fetch('http://localhost:5000/api/students', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(student)
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to add student');
+                    }
+                }
+
+                // If all students were added successfully
+                showModal('All students added successfully!', 'success');
+                
+                // Reset the form
+                const container = document.getElementById('studentForms');
+                container.innerHTML = `
+                    <div class="student-form">
+                        <label for="name_0">Name:</label>
+                        <input type="text" id="name_0" name="name" required>
+
+                        <label for="username_0">Username:</label>
+                        <input type="text" id="username_0" name="username" required>
+
+                        <label for="password_0">Password:</label>
+                        <input type="password" id="password_0" name="password" required>
+
+                        <label for="cellphone_0">Cellphone Number:</label>
+                        <div style="display: flex; align-items: center;">
+                            <span style="padding: 8.5px; background-color: #f5f5f5; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px;">+639</span>
+                            <input type="text" 
+                                id="cellphone_0" 
+                                name="cellphone" 
+                                required 
+                                pattern="[0-9]{9}"
+                                maxlength="9"
+                                style="border-left: none; border-radius: 0 4px 4px 0; margin-bottom: 0;"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                placeholder="Enter 9 digits"
+                                title="Please enter 9 digits after +639">
+                        </div>
+
+                        <label for="email_0">Email:</label>
+                        <input type="email" id="email_0" name="email" placeholder="Enter email address" required>
+                    </div>
+                `;
+                studentFormCount = 1;
+
+                // Close modal
+                closeModal();
+
+                // Refresh student list
+                await fetchStudents();
+            } catch (error) {
+                console.error('Error adding students:', error);
+                showModal('Failed to add students: ' + error.message, 'error');
+            }
+        }
+
+        // Add these new functions
+        //function showDashboard() {
+           // document.getElementById('dashboardContent').style.display = 'block';
+          //  fetchStudents(); // Fetch students data when dashboard is clicked
+        //}
+
+        // Remove or comment out the automatic fetch on window.load
+        window.onload = function() {
+            // Initially hide the dashboard
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            addEditBookModal();
+        };
+
+        // Additional functions for PDF generation and other features can be added here
+
+        async function showBooks() {
+            // First hide other sections
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('booksContent').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            
+            // Reset sort state
+            currentSort = {
+                column: null,
+                direction: 'asc'    
+            };
+            
+            // Remove sort classes from all headers
+            document.querySelectorAll('.sortable').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Fetch and display books first
+            await fetchBooks();
+            
+            // Ensure the table is visible
+            const booksTable = document.querySelector('.books-table');
+            if (booksTable) {
+                booksTable.style.display = 'table';
+            }
+            
+            // Add a small delay to ensure DOM is updated
+            setTimeout(() => {
+                // After books are loaded, reset to default sort by ID
+                const tbody = document.querySelector('.books-table tbody');
+                if (tbody) {
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    rows.sort((a, b) => {
+                        const aId = parseInt(a.querySelector('td:first-child').textContent);
+                        const bId = parseInt(b.querySelector('td:first-child').textContent);
+                        return aId - bId;
+                    });
+                    rows.forEach(row => tbody.appendChild(row));
+                }
+            }, 100);
+        }
+
+        function Members() {
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            fetchStudents();
+        }
+
+        function addBook() {
+            document.getElementById('addBookModal').style.display = 'block';
+        }
+        function Borrowed() {
+            window.location.href = 'borrowed.html';
+        }
+
+        
+
+        async function fetchBooks() {
+            try {
+                const response = await fetch('http://localhost:5000/api/books');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch books');
+                }
+
+                const bookTableBody = document.querySelector('.books-table tbody');
+                bookTableBody.innerHTML = '';
+
+                data.books.forEach(book => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${book.id}</td>
+                        <td>${book.name}</td>
+                        <td>${book.author}</td>
+                        <td>${book.ISBN || ''}</td>
+                        <td>${book.publication_year || ''}</td>
+                        <td>${book.category || ''}</td>
+                        <td>${book.language || ''}</td>
+                        <td>${book.shelf_location || ''}</td>
+                        <td>${book.copies_available || ''}</td>
+                        <td>
+                            <button onclick="deleteBook(${book.id})" class="delete-btn">Delete</button>
+                        </td>
+                    `;
+                    bookTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching books:', error);
+                alert('Failed to fetch books: ' + error.message);
+            }
+        }
+
+        let pdfDoc = null; // Variable to store the PDF document
+
+        async function printQRCodes() {
+            try {
+                if (!storedStudentData || storedStudentData.length === 0) {
+                    showModal('No students found to print QR codes.', 'error');
+                    return;
+                }
+
+                // Show loading message
+                showModal('Preparing QR codes, please wait...', 'info');
+
+                // Get the container and clear previous content
+                const qrList = document.getElementById('qrList');
+                qrList.innerHTML = '';
+
+                // Create all QR codes and collect their load promises
+                const loadPromises = [];
+
+                // Add each student's information and QR code
+                storedStudentData.forEach(student => {
+                    if (!student.qr_code) {
+                        console.warn(`No QR code found for student ${student.id}`);
+                        return;
+                    }
+
+                    const qrItem = document.createElement('div');
+                    qrItem.className = 'qr-item';
+                    
+                    qrItem.innerHTML = `
+                        <div class="qr-info">
+                            <p><strong>Student ID:</strong> ${student.id}</p>
+                            <p><strong>Name:</strong> ${student.name}</p>
+                            <p><strong>Username:</strong> ${student.username}</p>
+                        </div>
+                    `;
+                    
+                    const qrImage = document.createElement('img');
+                    // Create a promise for this image load
+                    const loadPromise = new Promise((resolve, reject) => {
+                        qrImage.onload = resolve;
+                        qrImage.onerror = reject;
+                    });
+                    loadPromises.push(loadPromise);
+                    
+                    qrImage.src = student.qr_code;
+                    qrImage.className = 'qr-image';
+                    qrImage.alt = `QR Code for ${student.name}`;
+                    qrItem.appendChild(qrImage);
+                    qrList.appendChild(qrItem);
+                });
+
+                // Wait for all images to load
+                await Promise.all(loadPromises);
+
+                // Show generating PDF message
+                showModal('Generating PDF, please wait...', 'info');
+
+                // Generate PDF with proper error handling
+                const element = document.getElementById('printContainer');
+                const opt = {
+                    margin: 10,
+                    filename: 'student-qr-codes.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        logging: true,
+                        backgroundColor: '#ffffff'
+                    },
+                    jsPDF: { 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        orientation: 'landscape'
+                    }
+                };
+
+                // Create PDF using promise chain
+                await html2pdf()
+                    .from(element)
+                    .set(opt)
+                    .save()
+                    .then(() => {
+                        document.getElementById('messageModal').style.display = 'block';
+                        showModal('PDF generated successfully!', 'success');
+                    })
+                    .catch(error => {
+                        console.error('PDF generation error:', error);
+                        showModal('Error generating PDF: ' + error.message, 'error');
+                    });
+
+            } catch (error) {
+                console.error('Error preparing QR codes:', error);
+                showModal('Error preparing QR codes: ' + error.message, 'error');
+            }
+        }
+
+        // Add Excel export function
+        async function exportToExcel() {
+            if (!storedStudentData || storedStudentData.length === 0) {
+                showModal('No student data to export.', 'error');
+                return;
+            }
+
+            showModal('Preparing Excel file with QR codes...', 'info');
+
+            try {
+                // Create a new workbook and worksheet
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Students');
+
+                // Set up columns
+                worksheet.columns = [
+                    { header: 'Student ID', key: 'id', width: 15 },
+                    { header: 'Name', key: 'name', width: 15 },
+                    { header: 'Username', key: 'username', width: 15 },
+                    { header: 'QR Code', key: 'qr', width: 15 }
+                ];
+
+                // Set row height for all rows
+                worksheet.properties.defaultRowHeight = 80;
+
+                // Add data and QR codes
+                for (const student of storedStudentData) {
+                    const row = worksheet.addRow({
+                        id: student.id,
+                        name: student.name,
+                        username: student.username
+                    });
+
+                    if (student.qr_code) {
+                        try {
+                            // Get the image data
+                            const imageId = workbook.addImage({
+                                base64: student.qr_code,
+                                extension: 'png',
+                            });
+
+                            // Add image to worksheet
+                            worksheet.addImage(imageId, {
+                                tl: { col: 3, row: row.number - 1 },
+                                ext: { width: 100, height: 100 }
+                            });
+                        } catch (imgError) {
+                            console.warn('Failed to add QR code for student:', student.id, imgError);
+                        }
+                    }
+                }
+
+                // Generate buffer
+                const buffer = await workbook.xlsx.writeBuffer();
+
+                // Create blob and download
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'student_qr_codes.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showModal('Excel file with QR codes generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating Excel file:', error);
+                showModal('Error generating Excel file: ' + error.message, 'error');
+            }
+        }
+
+        // Remove the old button event listener and keep only the Excel export functionality
+        // document.getElementById('download-pdf-btn').addEventListener('click', printQRCodes);
+
+        function searchStudents() {
+            const input = document.getElementById('studentSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.student-table tbody tr');
+
+            // Reset all rows to be visible before filtering
+            rows.forEach(row => {
+                row.style.display = ''; // Show all rows
+            });
+
+            rows.forEach(row => {
+                const name = row.cells[1].textContent.toLowerCase(); // Assuming the name is in the second column
+                row.style.display = name.includes(input) ? '' : 'none';
+            });
+        }
+
+        function searchBooks() {
+            const input = document.getElementById('bookSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.books-table tbody tr');
+
+            // Reset all rows to be visible before filtering
+            rows.forEach(row => {
+                row.style.display = ''; // Show all rows
+            });
+
+            rows.forEach(row => {
+                const name = row.cells[2].textContent.toLowerCase(); // Assuming the name is in the second column
+                row.style.display = name.includes(input) ? '' : 'none';
+            });
+        }
+
+        function showHistory() {
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('fetch-history').style.display = 'block';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            fetchHistory();
+        }
+
+        function Dashboard() {
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+            fetchDashboardData();
+        }
+        // Fetch dashboard data
+        const API_DASHBOARD_URL = "http://localhost:5000/api/dashboard"; // Endpoint for dashboard data
+
+        // Fetch dashboard data from the database and update the metrics
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch(API_DASHBOARD_URL);
+                const data = await response.json();
+
+                document.getElementById('total-students').textContent = data.totalStudents;
+                document.getElementById('total-books').textContent = data.totalBooks;
+                document.getElementById('total-borrowed').textContent = data.totalBorrowedBooks;
+                document.getElementById('returned-books').textContent = data.returnedBooks;
+                document.getElementById('pending-books').textContent = data.pendingBooks;
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            }
+        }
+
+        // Call the function to fetch dashboard data when the page loads
+        document.addEventListener('DOMContentLoaded', fetchDashboardData);
+
+        // Function to delete a student
+        async function deleteStudent() {
+            const studentIdOrName = document.getElementById('deleteStudentId').value.trim();
+
+            if (!studentIdOrName) {
+                showModal('Please enter a Student ID or Name to delete.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:5000/api/students/${studentIdOrName}`, {
+                    method: 'DELETE',
+                });
+
+                // Check if the response is okay
+                if (!response.ok) {
+                    const result = await response.json();
+                    showModal(result.error || 'Failed to delete student.', 'error');
+                    return;
+                }
+
+                // If successful, show success message
+                showModal('Student deleted successfully!', 'success');
+
+                // Refresh the student list
+                await fetchStudents(); // Call the function to refresh the student list
+            } catch (error) {
+                showModal('Error deleting student: ' + error.message, 'error');
+            }
+        }
+
+        // Show the delete student modal
+        document.getElementById('openDeleteModal-btn').onclick = function() {
+            const modal = document.getElementById('deleteStudentModal');
+            modal.style.display = 'block'; // Show the modal
+        }
+
+        // Close the modal when the user clicks on <span> (x)
+        document.getElementById('closeDeleteModal').onclick = function() {
+            const modal = document.getElementById('deleteStudentModal');
+            modal.style.display = 'none'; // Hide the modal
+        }
+
+        // Close the modal when the user clicks anywhere outside of the modal
+        window.onclick = function(event) {
+            const studentModal = document.getElementById('deleteStudentModal');
+            const bookModal = document.getElementById('deleteBookModal');
+            const messageModal = document.getElementById('messageModal');
+            const addStudentModal = document.getElementById('addStudentModal');
+            
+            if (event.target === studentModal) {
+                studentModal.style.display = 'none';
+            }
+            if (event.target === bookModal) {
+                bookModal.style.display = 'none';
+            }
+            if (event.target === messageModal) {
+                messageModal.style.display = 'none';
+            }
+            if (event.target === addStudentModal) {
+                closeModal();
+            }
+        }
+
+        // Add this function in the script section
+        function validateYear(input) {
+            if (input.value.length > 4) {
+                input.value = input.value.slice(0, 4);
+            }
+            // Ensure the value is between 1000 and 9999
+            
+        }
+
+        async function exportBooksToExcel() {
+            try {
+                const result = await window.electronAPI.getBooks();
+                if (!result.success || !result.books || result.books.length === 0) {
+                    showModal('No book data to export.', 'error');
+                    return;
+                }
+
+                showModal('Preparing Excel file with QR codes...', 'info');
+
+                // Create a new workbook and worksheet
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Books');
+
+                // Set up columns
+                worksheet.columns = [
+                    { header: 'Book Name', key: 'name', width: 30 },
+                    { header: 'QR Code', key: 'qr', width: 15 }
+                ];
+
+                // Set row height for all rows
+                worksheet.properties.defaultRowHeight = 80;
+
+                // Add data and QR codes
+                for (const book of result.books) {
+                    const row = worksheet.addRow({
+                        name: book.name
+                    });
+
+                    if (book.qr_code) {
+                        try {
+                            // Get the image data
+                            const imageId = workbook.addImage({
+                                base64: book.qr_code,
+                                extension: 'png',
+                            });
+
+                            // Add image to worksheet
+                            worksheet.addImage(imageId, {
+                                tl: { col: 1, row: row.number - 1 },
+                                ext: { width: 100, height: 100 }
+                            });
+                        } catch (imgError) {
+                            console.warn('Failed to add QR code for book:', book.name, imgError);
+                        }
+                    }
+                }
+
+                // Generate buffer
+                const buffer = await workbook.xlsx.writeBuffer();
+
+                // Create blob and download
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'book_qr_codes.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showModal('Excel file with QR codes generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating Excel file:', error);
+                showModal('Error generating Excel file: ' + error.message, 'error');
+            }
+        }
+
+        function formatPhoneNumber(input) {
+            // Remove any non-digit characters
+            let value = input.value.replace(/[^0-9]/g, '');
+            
+            // Ensure the value doesn't exceed 9 digits
+            if (value.length > 9) {
+                value = value.slice(0, 9);
+            }
+            
+            input.value = value;
+        }
+
+        // Add these functions for book deletion
+        async function deleteBook() {
+            const bookIdOrName = document.getElementById('deleteBookId').value.trim();
+
+            if (!bookIdOrName) {
+                showModal('Please enter a Book ID or Name to delete.', 'error');
+                return;
+            }
+
+            try {
+                const result = await window.electronAPI.deleteBook(bookIdOrName);
+                
+                if (result.success) {
+                    // If successful, show success message
+                    showModal('Book deleted successfully!', 'success');
+
+                    // Close the modal
+                    document.getElementById('deleteBookModal').style.display = 'none';
+
+                    // Refresh the books list
+                    await fetchBooks();
+                } else {
+                    showModal(result.error || 'Failed to delete book.', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting book:', error);
+                showModal('Error deleting book: ' + error.message, 'error');
+            }
+        }
+
+        // Show the delete book modal
+        document.getElementById('openDeleteBookModal-btn').onclick = function() {
+            const modal = document.getElementById('deleteBookModal');
+            modal.style.display = 'block';
+        }
+
+        // Close the delete book modal when clicking the X
+        document.getElementById('closeDeleteBookModal').onclick = function() {
+            const modal = document.getElementById('deleteBookModal');
+            modal.style.display = 'none';
+        }
+
+        // Update the window click handler to include the book modal
+        window.onclick = function(event) {
+            const studentModal = document.getElementById('deleteStudentModal');
+            const bookModal = document.getElementById('deleteBookModal');
+            const messageModal = document.getElementById('messageModal');
+            const addStudentModal = document.getElementById('addStudentModal');
+            
+            if (event.target === studentModal) {
+                studentModal.style.display = 'none';
+            }
+            if (event.target === bookModal) {
+                bookModal.style.display = 'none';
+            }
+            if (event.target === messageModal) {
+                messageModal.style.display = 'none';
+            }
+            if (event.target === addStudentModal) {
+                closeModal();
+            }
+        }
+
+        // Add the showModal function
+        function showModal(message, type = 'info') {
+            const modal = document.getElementById('messageModal');
+            const modalContent = modal.querySelector('.modal-content');
+            const modalMessage = document.getElementById('modalMessage');
+            
+            // Remove any existing type classes
+            modalContent.classList.remove('info', 'success', 'error');
+            // Add the new type class
+            modalContent.classList.add(type);
+            
+            modalMessage.textContent = message;
+            modal.style.display = 'block';
+            
+            // Automatically hide the modal after 3 seconds
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 3000);
+        }
+
+        // Add returned section functions
+        function Returned() {
+            window.location.href = 'returned.html';
+        }
+
+        async function fetchReturnedBooks() {
+            try {
+                const response = await fetch('http://localhost:5000/api/returned');
+                const data = await response.json();
+                
+                const tableBody = document.querySelector('.returned-table tbody');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                data.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.student_id}</td>
+                        <td>${record.student_name}</td>
+                        <td>${record.book_id}</td>
+                        <td>${record.book_name}</td>
+                        <td>${formatDate(record.borrow_date)}</td>
+                        <td>${formatDate(record.return_date)}</td>
+                        <td>${record.status}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching returned books:', error);
+                showModal('Error fetching returned books data', 'error');
+            }
+        }
+
+        function searchReturned() {
+            const input = document.getElementById('returnedSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.returned-table tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        // Add this new modal HTML after your existing modals
+        function addEditBookModal() {
+            const modal = document.createElement('div');
+            modal.id = 'editBookModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="closeEditBookModal()">&times;</span>
+                    <h2>Edit Book Details</h2>
+                    <input type="hidden" id="editBookId">
+                    <label for="editShelfLocation">Shelf Location:</label>
+                    <input type="text" id="editShelfLocation" required>
+                    <label for="editCopiesAvailable">Copies Available:</label>
+                    <input type="number" id="editCopiesAvailable" required min="0">
+                    <button onclick="updateBook()">Save Changes</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Add these new functions for handling book editing
+        function editBook(bookId, shelfLocation, copiesAvailable) {
+            document.getElementById('editBookId').value = bookId;
+            document.getElementById('editShelfLocation').value = shelfLocation;
+            document.getElementById('editCopiesAvailable').value = copiesAvailable;
+            document.getElementById('editBookModal').style.display = 'block';
+        }
+
+        function closeEditBookModal() {
+            document.getElementById('editBookModal').style.display = 'none';
+        }
+
+        async function updateBook() {
+            const bookId = document.getElementById('editBookId').value;
+            const shelfLocation = document.getElementById('editShelfLocation').value;
+            const copiesAvailable = document.getElementById('editCopiesAvailable').value;
+
+            try {
+                const result = await window.electronAPI.updateBook({
+                    id: bookId,
+                    shelfLocation: shelfLocation,
+                    copiesAvailable: copiesAvailable
+                });
+
+                if (result.success) {
+                    showModal('Book updated successfully!', 'success');
+                    closeEditBookModal();
+                    fetchBooks(); // Refresh the table
+                } else {
+                    showModal(result.error || 'Failed to update book', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating book:', error);
+                showModal('Error updating book: ' + error.message, 'error');
+            }
+        }
+
+        // Add these variables at the top of your script section
+        let currentSort = {
+            column: null,
+            direction: 'asc'
+        };
+
+        // Add this function to handle sorting
+        function sortTable(column, direction) {
+            const tbody = document.querySelector('.books-table tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Remove sort classes from all headers
+            document.querySelectorAll('.sortable').forEach(header => {
+                header.classList.remove('asc', 'desc');
+            });
+            
+            // Add sort class to current header
+            const header = document.querySelector(`[data-sort="${column}"]`);
+            header.classList.add(direction);
+            
+            // Sort the rows
+            rows.sort((a, b) => {
+                let aValue = a.querySelector(`td:nth-child(${getColumnIndex(column)})`).textContent;
+                let bValue = b.querySelector(`td:nth-child(${getColumnIndex(column)})`).textContent;
+                
+                // Handle numeric values
+                if (['id', 'publication_year', 'copies_available', 'number_of_page'].includes(column)) {
+                    aValue = parseFloat(aValue) || 0;
+                    bValue = parseFloat(bValue) || 0;
+                }
+                
+                // Handle null/empty values
+                if (aValue === 'N/A' || aValue === '') aValue = direction === 'asc' ? 'zzz' : '';
+                if (bValue === 'N/A' || bValue === '') bValue = direction === 'asc' ? 'zzz' : '';
+                
+                // Compare values
+                if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            // Reorder the rows
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Helper function to get column index
+        function getColumnIndex(column) {
+            const headers = document.querySelectorAll('.books-table th');
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i].dataset.sort === column) {
+                    return i + 1;
+                }
+            }
+            return 1;
+        }
+
+        // Update the exportHistoryToExcel function
+        async function exportHistoryToExcel() {
+            try {
+                const response = await fetch(HISTORY_API_URL);
+                const history = await response.json();
+                
+                if (!history || history.length === 0) {
+                    showModal('No history data to export.', 'error');
+                    return;
+                }
+
+                showModal('Preparing Excel file...', 'info');
+
+                // Create a new workbook and worksheet
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Borrowing History');
+
+                // Set up columns
+                worksheet.columns = [
+                    { header: 'Student ID', key: 'student_id', width: 15 },
+                    { header: 'Student Name', key: 'student_name', width: 20 },
+                    { header: 'Username', key: 'username', width: 15 },
+                    { header: 'Book ID', key: 'book_id', width: 15 },
+                    { header: 'Book Name', key: 'book_name', width: 30 },
+                    { header: 'Borrow Date', key: 'borrow_date', width: 20 },
+                    { header: 'Due Date', key: 'due_date', width: 20 },
+                    { header: 'Return Date', key: 'return_date', width: 20 },
+                    { header: 'Status', key: 'status', width: 15 }
+                ];
+
+                // Get selected month and year
+                const selectedMonth = document.getElementById('monthFilter').value;
+                const selectedYear = document.getElementById('yearFilter').value;
+                
+                // Filter history based on selected month and year
+                const filteredHistory = history.filter(record => {
+                    const borrowDate = new Date(record.borrow_date);
+                    const monthMatch = selectedMonth === 'all' || borrowDate.getMonth() + 1 === parseInt(selectedMonth);
+                    const yearMatch = selectedYear === 'all' || borrowDate.getFullYear() === parseInt(selectedYear);
+                    return monthMatch && yearMatch;
+                });
+
+                // Add data
+                filteredHistory.forEach(record => {
+                    worksheet.addRow({
+                        student_id: record.student_id,
+                        student_name: record.student_name,
+                        username: record.username,
+                        book_id: record.book_id,
+                        book_name: record.book_name,
+                        borrow_date: formatDate(record.borrow_date),
+                        due_date: formatDate(record.due_date),
+                        return_date: record.return_date ? formatDate(record.return_date) : 'Not Returned',
+                        status: record.status
+                    });
+                });
+
+                // Generate buffer
+                const buffer = await workbook.xlsx.writeBuffer();
+
+                // Create blob and download
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Create filename based on selected filters
+                let filename = 'borrowing_history';
+                if (selectedMonth !== 'all') {
+                    filename += `_${new Date(2000, selectedMonth - 1).toLocaleString('default', { month: 'long' })}`;
+                }
+                if (selectedYear !== 'all') {
+                    filename += `_${selectedYear}`;
+                }
+                if (selectedMonth === 'all' && selectedYear === 'all') {
+                    filename += '_all_records';
+                }
+                filename += '.xlsx';
+                
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showModal('Excel file generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating Excel file:', error);
+                showModal('Error generating Excel file: ' + error.message, 'error');
+            }
+        }
+
+        // Update the filter function to handle both month and year
+        function filterHistoryByDate() {
+            const selectedMonth = document.getElementById('monthFilter').value;
+            const selectedYear = document.getElementById('yearFilter').value;
+            const rows = document.querySelectorAll('.history-table tbody tr');
+
+            rows.forEach(row => {
+                const borrowDate = new Date(row.cells[5].textContent); // Borrow date is in the 6th column
+                const monthMatch = selectedMonth === 'all' || borrowDate.getMonth() + 1 === parseInt(selectedMonth);
+                const yearMatch = selectedYear === 'all' || borrowDate.getFullYear() === parseInt(selectedYear);
+                row.style.display = monthMatch && yearMatch ? '' : 'none';
+            });
+        }
+
+        // Add points calculation function
+        function calculatePoints(borrowDate, returnDate, dueDate) {
+            const points = {
+                basePoints: 10,          // Base points for borrowing
+                earlyReturnBonus: 5,     // Points for returning early (but not too early)
+                lateReturnPenalty: -5,   // Points deducted for late return
+                noReturnPenalty: -10,    // Points deducted for not returning
+                minimumBorrowTime: 2,    // Minimum days to borrow before returning (to prevent exploitation)
+                maximumEarlyBonus: 3     // Maximum days early for bonus points
+            };
+
+            if (!returnDate) {
+                return points.noReturnPenalty;
+            }
+
+            const borrowDateTime = new Date(borrowDate);
+            const returnDateTime = new Date(returnDate);
+            const dueDateTime = new Date(dueDate);
+
+            // Calculate days borrowed and days early/late
+            const daysBorrowed = Math.floor((returnDateTime - borrowDateTime) / (1000 * 60 * 60 * 24));
+            const daysEarly = Math.floor((dueDateTime - returnDateTime) / (1000 * 60 * 60 * 24));
+            const daysLate = Math.floor((returnDateTime - dueDateTime) / (1000 * 60 * 60 * 24));
+
+            let totalPoints = points.basePoints;
+
+            // Check if returned too early (exploitation prevention)
+            if (daysBorrowed < points.minimumBorrowTime) {
+                return points.noReturnPenalty;
+            }
+
+            // Early return bonus
+            if (daysEarly > 0 && daysEarly <= points.maximumEarlyBonus) {
+                totalPoints += points.earlyReturnBonus;
+            }
+
+            // Late return penalty
+            if (daysLate > 0) {
+                totalPoints += points.lateReturnPenalty * daysLate;
+            }
+
+            return totalPoints;
+        }
+
+        // Update the return book function to include points calculation
+        async function returnBook(bookId, studentId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/return`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookId: bookId,
+                        studentId: studentId
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const points = calculatePoints(
+                        result.borrowDate,
+                        result.returnDate,
+                        result.dueDate
+                    );
+
+                    // Update student points
+                    await updateStudentPoints(studentId, points);
+
+                    showModal(`Book returned successfully! Points earned: ${points}`, 'success');
+                    await fetchBooks();
+                    await fetchStudents();
+                } else {
+                    const error = await response.json();
+                    showModal(error.message || 'Failed to return book', 'error');
+                }
+            } catch (error) {
+                console.error('Error returning book:', error);
+                showModal('Failed to return book', 'error');
+            }
+        }
+
+        // Add function to update student points
+        async function updateStudentPoints(studentId, points) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/students/${studentId}/points`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ points: points })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update student points');
+                }
+            } catch (error) {
+                console.error('Error updating student points:', error);
+                throw error;
+            }
+        }
+
+        // Add function to calculate due date (5 days from borrow date)
+        function calculateDueDate(borrowDate) {
+            const dueDate = new Date(borrowDate);
+            dueDate.setDate(dueDate.getDate() + 5);
+            return dueDate.toISOString().split('T')[0];
+        }
+
+        // Update the borrow book function
+        async function borrowBook(bookId, studentId) {
+            try {
+                const borrowDate = new Date().toISOString().split('T')[0];
+                const dueDate = calculateDueDate(borrowDate);
+
+                const response = await fetch(`${API_BASE_URL}/borrow`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookId: bookId,
+                        studentId: studentId,
+                        borrowDate: borrowDate,
+                        dueDate: dueDate,
+                        status: 'Borrowed'
+                    })
+                });
+
+                if (response.ok) {
+                    showModal('Book borrowed successfully! Due date: ' + new Date(dueDate).toLocaleDateString(), 'success');
+                    await fetchBooks();
+                    await fetchStudents();
+                } else {
+                    const error = await response.json();
+                    showModal(error.message || 'Failed to borrow book', 'error');
+                }
+            } catch (error) {
+                console.error('Error borrowing book:', error);
+                showModal('Failed to borrow book', 'error');
+            }
+        }
+
+        // Update the history display function to show due dates
+        function displayHistory(data) {
+            const historyBody = document.getElementById('historyBody');
+            historyBody.innerHTML = data.map(record => `
+                <tr>
+                    <td>${record.bookTitle}</td>
+                    <td>${new Date(record.borrowDate).toLocaleDateString()}</td>
+                    <td>${new Date(record.dueDate).toLocaleDateString()}</td>
+                    <td>${record.returnDate ? new Date(record.returnDate).toLocaleDateString() : '-'}</td>
+                    <td><span class="status-badge status-${record.status.toLowerCase()}">${record.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Add function to check overdue books
+        async function checkOverdueBooks() {
+            try {
+                const response = await fetch('http://localhost:5000/api/overdue-books');
+                const result = await response.json();
+                
+                const overdueSection = document.getElementById('overdueBooks');
+                if (!overdueSection) return;
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to fetch overdue books');
+                }
+
+                const overdueBooks = result.data || [];
+                if (overdueBooks.length === 0) {
+                    overdueSection.innerHTML = '<p>No overdue books at the moment.</p>';
+                    return;
+                }
+
+                overdueSection.innerHTML = `
+                    <h3>Overdue Books (${overdueBooks.length})</h3>
+                    <table class="overdue-table">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Student Name</th>
+                                <th>Borrow Date</th>
+                                <th>Due Date</th>
+                                <th>Days Overdue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${overdueBooks.map(book => {
+                                const dueDate = new Date(book.dueDate);
+                                const now = new Date();
+                                const daysOverdue = Math.floor((now - dueDate) / (1000 * 60 * 60 * 24));
+                                return `
+                                    <tr>
+                                        <td>${book.title}</td>
+                                        <td>${book.studentName}</td>
+                                        <td>${formatDate(book.borrowDate)}</td>
+                                        <td>${formatDate(book.dueDate)}</td>
+                                        <td class="overdue-days">${daysOverdue} days</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Error fetching overdue books:', error);
+                const overdueSection = document.getElementById('overdueBooks');
+                if (overdueSection) {
+                    overdueSection.innerHTML = '<p>Error loading overdue books. Please try again later.</p>';
+                }
+            }
+        }
+
+        // Call checkOverdueBooks when the dashboard loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... existing code ...
+            checkOverdueBooks();
+            // Refresh overdue books every 5 minutes
+            setInterval(checkOverdueBooks, 5 * 60 * 1000);
+        });
+
+        // Add this function at the beginning of your script section
+        function setActiveMenuItem(menuId) {
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to the selected menu item
+            const selectedItem = document.getElementById(menuId);
+            if (selectedItem) {
+                selectedItem.classList.add('active');
+            }
+        }
+
+        // Update the existing functions to include the active menu highlighting
+        function Dashboard() {
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+            fetchDashboardData();
+            setActiveMenuItem('dashboard-menu');
+        }
+
+        function Members() {
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            fetchStudents();
+            setActiveMenuItem('members-menu');
+        }
+
+        function showBooks() {
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('booksContent').style.display = 'block';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            fetchBooks();
+            setActiveMenuItem('books-menu');
+            // ... rest of your existing showBooks code ...
+        }
+
+        function showHistory() {
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('booksContent').style.display = 'none';
+            document.getElementById('fetch-history').style.display = 'block';
+            document.getElementById('dashboardAdmin').style.display = 'none';
+            setActiveMenuItem('history-menu');
+            fetchHistory();
+        }
+
+        function Borrowed() {
+            setActiveMenuItem('borrowed-menu');
+            window.location.href = 'borrowed.html';
+        }
+
+        function Returned() {
+            setActiveMenuItem('returned-menu');
+            window.location.href = 'returned.html';
+        }
+
+        function logout() {
+            setActiveMenuItem('logout-menu');
+            window.location.href = 'login.html';
+        }
+
+        // Update the window.onload function to set the initial active menu
+        window.onload = function() {
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('fetch-history').style.display = 'none';
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            addEditBookModal();
+            setActiveMenuItem('dashboard-menu'); // Set Dashboard as active by default
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan QR Codes - Borrow Books</title>
+    <script src="assets/libs/html5-qrcode.min.js"></script>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #qr-reader {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .waiting { background-color: #fff3cd; color: #856404; }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .back-button {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .confirm-button {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .scan-button {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <button class="back-button" onclick="window.location.href='admindashboard.html'">Back to Dashboard</button>
+        
+        <h2 id="scan-title">Scan Student QR Code</h2>
+        <div id="qr-reader"></div>
+
+        <div class="info-panel">
+            <div id="student-info" style="display: none;">
+                <h3>Student Information</h3>
+                <p>ID: <span id="student-id"></span></p>
+                <p>Name: <span id="student-name"></span></p>
+                <p>Username: <span id="student-username"></span></p>
+            </div>
+
+            <div id="book-info" style="display: none;">
+                <h3>Book Information</h3>
+                <p>ID: <span id="book-id"></span></p>
+                <p>Title: <span id="book-title"></span></p>
+                <p>Author: <span id="book-author"></span></p>
+            </div>
+
+            <div id="status" class="status"></div>
+        </div>
+
+        <button id="confirm-btn" class="confirm-button" style="display: none;" onclick="confirmBorrowing()">
+            Confirm Borrowing
+        </button>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = null;
+        let studentData = null;
+        let bookData = null;
+        let scanningStudent = true;
+
+        function onScanSuccess(decodedText) {
+            try {
+                const data = JSON.parse(decodedText);
+                
+                if (scanningStudent) {
+                    studentData = data;
+                    if (data.id && data.name && data.username) {
+                        displayStudentInfo(data);
+                        switchToBookScanning();
+                    } else {
+                        showStatus("Invalid student QR code format", "error");
+                    }
+                } else {
+                    bookData = data;
+                    if (data.id && data.name && data.author) {
+                        displayBookInfo(data);
+                        completeScan();
+                    } else {
+                        showStatus("Invalid book QR code format", "error");
+                    }
+                }
+            } catch (error) {
+                showStatus("Invalid QR code format", "error");
+            }
+        }
+
+        function displayStudentInfo(data) {
+            document.getElementById('student-info').style.display = 'block';
+            document.getElementById('student-id').textContent = data.id;
+            document.getElementById('student-name').textContent = data.name;
+            document.getElementById('student-username').textContent = data.username;
+        }
+
+        function displayBookInfo(data) {
+            document.getElementById('book-info').style.display = 'block';
+            document.getElementById('book-id').textContent = data.id;
+            document.getElementById('book-title').textContent = data.name;
+            document.getElementById('book-author').textContent = data.author;
+        }
+
+        function switchToBookScanning() {
+            scanningStudent = false;
+            document.getElementById('scan-title').textContent = 'Scan Book QR Code';
+            showStatus("Now scan the book's QR code", "waiting");
+        }
+
+        function completeScan() {
+            html5QrcodeScanner.clear();
+            document.getElementById('confirm-btn').style.display = 'block';
+            showStatus("Ready to confirm borrowing", "success");
+        }
+
+        async function confirmBorrowing() {
+            try {
+                const response = await fetch('http://localhost:5000/api/borrow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        studentId: studentData.id,
+                        bookId: bookData.id
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus("Successfully recorded borrowing!", "success");
+                    setTimeout(() => {
+                        resetScanner();
+                    }, 2000);
+                } else {
+                    showStatus("Error: " + result.error, "error");
+                }
+            } catch (error) {
+                showStatus("Error recording borrowing", "error");
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function resetScanner() {
+            studentData = null;
+            bookData = null;
+            scanningStudent = true;
+            document.getElementById('student-info').style.display = 'none';
+            document.getElementById('book-info').style.display = 'none';
+            document.getElementById('confirm-btn').style.display = 'none';
+            document.getElementById('scan-title').textContent = 'Scan Student QR Code';
+            initializeScanner();
+        }
+
+        function initializeScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+            }
+
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                }
+            );
+            
+            html5QrcodeScanner.render(onScanSuccess);
+        }
+
+        // Initialize scanner when page loads
+        window.onload = initializeScanner;
+    </script>
+</body>
+</html> 

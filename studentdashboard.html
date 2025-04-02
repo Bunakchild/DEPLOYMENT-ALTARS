@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="assets/student_dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <style>
+        /* Add styles for dynamic content */
+        .content-section {
+            display: none;
+            padding: 20px;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .book-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .book-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .book-info {
+            margin-top: 10px;
+        }
+
+        .book-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .book-author {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .points-history {
+            margin-top: 20px;
+        }
+
+        .points-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .points-table th,
+        .points-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .points-table th {
+            background-color: #f5f5f5;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .history-table th {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+
+        .history-table th:hover {
+            background-color: #e9ecef;
+        }
+
+        .history-table th::after {
+            content: "↕";
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .history-table th[data-sort="asc"]::after {
+            content: "↑";
+        }
+
+        .history-table th[data-sort="desc"]::after {
+            content: "↓";
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .status-borrowed {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-returned {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-pending {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+
+        #readingTrendChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .history-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 250px;
+        }
+
+        .sort-icon {
+            font-size: 12px;
+            margin-left: 4px;
+            display: inline-block;
+        }
+
+        .points-rules, .points-rewards {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .points-rules ul, .points-rewards ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .points-rules li, .points-rewards li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .points-rules li:before, .points-rewards li:before {
+            content: "•";
+            color: #007bff;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        .points-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .points-table th, .points-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .points-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .points-table tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <img src="assets/pic/logonglittleheirs.jpg" alt="Student">
+        <h3 id="studentName">Loading...</h3>
+        <p id="studentId">ID: Loading...</p>
+
+        <div class="menu">
+            <button class="menu-btn active" data-section="dashboard">Dashboard</button>
+            <button class="menu-btn" data-section="recommended">Recommended Books</button>
+            <button class="menu-btn" data-section="points">Reward Points</button>
+            <button class="menu-btn" data-section="history">History</button>
+        </div>
+        <button class="logout" onclick="logout()">Log Out</button>
+    </div>
+
+    <div class="main">
+        <!-- Dashboard Section -->
+        <div class="content-section active" id="dashboard">
+            <h1>Dashboard</h1>
+            <div class="cards">
+                <div class="card">
+                    <img src="assets/studentdashboard_img/bookborrowed.png" alt="Book Borrowed">
+                    <h2 id="borrowedCount">0</h2>
+                    <p>Book Currently Borrowing</p>
+                </div>
+                <div class="card">
+                    <img src="assets/studentdashboard_img/returnedbooks.png" alt="Book Returned">
+                    <h2 id="returnedCount">0</h2>
+                    <p>Book Returned</p>
+                </div>
+                <div class="card">
+                    <img src="assets/studentdashboard_img/rewardpoints.png" alt="Reward Points">
+                    <h2 id="pointsCount">0</h2>
+                    <p>Reward Points</p>
+                </div>
+                <div class="card">
+                    <img src="assets/studentdashboard_img/pendingreturn.png" alt="Pending Return">
+                    <h2 id="pendingCount">0</h2>
+                    <p>Pending Return</p>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="readingTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recommended Books Section -->
+        <div class="content-section" id="recommended">
+            <h1>Recommended Books</h1>
+            <div class="book-grid" id="recommendedBooks">
+                <!-- Books will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Reward Points Section -->
+        <div class="content-section" id="points">
+            <h1>Reward Points</h1>
+            <div class="points-summary">
+                <h2>Current Points: <span id="currentPoints">0</span></h2>
+                <div class="points-rules">
+                    <h3>Points Rules:</h3>
+                    <ul>
+                        <li>Borrowing a book: 0 points</li>
+                        <li>Returning early (1-2 days): 0 points</li>
+                        <li>Returning on time (3-4 days): 10 points</li>
+                        <li>Late return: 2 points (10 points - 8 points penalty)</li>
+                    </ul>
+                </div>
+                <div class="points-rewards">
+                    <h3>Available Rewards:</h3>
+                    <ul>
+                        <li>Extended borrowing periods</li>
+                        <li>Priority access to new books</li>
+                        <li>Special library privileges</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="points-history">
+                <h3>Points History</h3>
+                <table class="points-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Activity</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pointsHistoryBody">
+                        <!-- Points history will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="content-section" id="history">
+            <h1>Borrowing History</h1>
+            <div class="history-filters">
+                <select id="historyFilter">
+                    <option value="all">All History</option>
+                    <option value="borrowed">Currently Borrowed</option>
+                    <option value="returned">Returned</option>
+                    <option value="pending">Pending Return</option>
+                </select>
+                <input type="text" id="historySearch" placeholder="Search by book title..." class="search-input">
+            </div>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th data-sort="bookTitle">Book Title</th>
+                        <th data-sort="borrowDate">Borrow Date</th>
+                        <th data-sort="dueDate">Due Date</th>
+                        <th data-sort="returnDate">Return Date</th>
+                        <th data-sort="status">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <!-- History will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let currentUser = null;
+        let currentHistoryData = [];
+        let currentSort = { column: null, direction: 'asc' };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Check if user is logged in
+                const userData = localStorage.getItem('userData');
+                console.log('User Data from localStorage:', userData); // Debug log
+
+                if (!userData) {
+                    console.log('No user data found, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentUser = JSON.parse(userData);
+                console.log('Parsed User Data:', currentUser); // Debug log
+
+                // Validate user data
+                if (!currentUser || !currentUser.name || !currentUser.id) {
+                    console.error('Invalid user data structure');
+                    localStorage.removeItem('userData');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                updateUserInfo();
+                await loadDashboardData();
+                setupNavigation();
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Update user information in sidebar
+        function updateUserInfo() {
+            try {
+                if (!currentUser) {
+                    throw new Error('No user data available');
+                }
+                
+                const nameElement = document.getElementById('studentName');
+                const idElement = document.getElementById('studentId');
+                
+                if (nameElement && idElement) {
+                    nameElement.textContent = currentUser.name || 'Unknown Student';
+                    idElement.textContent = `ID: ${currentUser.id || 'Unknown'}`;
+                } else {
+                    console.error('Required DOM elements not found');
+                }
+            } catch (error) {
+                console.error('Error updating user info:', error);
+            }
+        }
+
+        // Setup navigation
+        function setupNavigation() {
+            const menuButtons = document.querySelectorAll('.menu-btn');
+            menuButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and sections
+                    menuButtons.forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.content-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+
+                    // Add active class to clicked button and corresponding section
+                    button.classList.add('active');
+                    const sectionId = button.dataset.section;
+                    document.getElementById(sectionId).classList.add('active');
+
+                    // Load section data
+                    loadSectionData(sectionId);
+                });
+            });
+        }
+
+        // Load section data
+        async function loadSectionData(sectionId) {
+            switch(sectionId) {
+                case 'dashboard':
+                    await loadDashboardData();
+                    break;
+                case 'recommended':
+                    await loadRecommendedBooks();
+                    break;
+                case 'points':
+                    await loadPointsData();
+                    break;
+                case 'history':
+                    await loadHistory();
+                    break;
+            }
+        }
+
+        // Load dashboard data with improved error handling
+        async function loadDashboardData() {
+            try {
+                if (!currentUser || !currentUser.id) {
+                    throw new Error('Invalid user data');
+                }
+
+                const response = await fetchWithTimeout(
+                    `${API_BASE_URL}/student/dashboard/${currentUser.id}`,
+                    { timeout: 5000 }
+                );
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Update counts with fallback values
+                document.getElementById('borrowedCount').textContent = data.borrowedCount || '0';
+                document.getElementById('returnedCount').textContent = data.returnedCount || '0';
+                document.getElementById('pointsCount').textContent = data.points || '0';
+                document.getElementById('pendingCount').textContent = data.pendingCount || '0';
+
+                // Update reading trend chart if data exists
+                if (data.readingTrend) {
+                    updateReadingTrendChart(data.readingTrend);
+                }
+
+                // Also load points data to ensure consistency
+                await loadPointsData();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showModal('Unable to load dashboard data. Please try again later.', 'error');
+            }
+        }
+
+        // Load recommended books
+        async function loadRecommendedBooks() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/student/recommended/${currentUser.id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Check if data is an array
+                if (!Array.isArray(data)) {
+                    console.error('Received non-array data:', data);
+                    return;
+                }
+                
+                const container = document.getElementById('recommendedBooks');
+                if (data.length === 0) {
+                    container.innerHTML = '<p>No recommended books available at the moment.</p>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(book => `
+                    <div class="book-card">
+                        <img src="${book.image_url || 'assets/pic/default-book.jpg'}" alt="${book.title}" style="width: 150px; height: 200px; object-fit: cover;">
+                        <div class="book-info">
+                            <div class="book-title">${book.title}</div>
+                            <div class="book-author">${book.author}</div>
+                            <div class="book-rating">Rating: ${book.rating || 'N/A'}/5</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading recommended books:', error);
+                const container = document.getElementById('recommendedBooks');
+                container.innerHTML = '<p>Error loading recommended books. Please try again later.</p>';
+            }
+        }
+
+        // Load points data
+        async function loadPointsData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/student/points/${currentUser.id}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Update points in both dashboard and points section
+                document.getElementById('currentPoints').textContent = data.points || 0;
+                document.getElementById('pointsCount').textContent = data.points || 0;
+                
+                // Update points history table
+                const historyBody = document.getElementById('pointsHistoryBody');
+                if (data.history && Array.isArray(data.history)) {
+                    historyBody.innerHTML = data.history.map(record => `
+                        <tr>
+                            <td>${new Date(record.date).toLocaleDateString()}</td>
+                            <td>${record.activity}</td>
+                            <td>${record.points > 0 ? '+' : ''}${record.points}</td>
+                           
+                        </tr>
+                    `).join('');
+                } else {
+                    historyBody.innerHTML = '<tr><td colspan="4">No points history available</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading points data:', error);
+                showModal('Error loading points data. Please try again later.', 'error');
+            }
+        }
+
+        // Load history
+        async function loadHistory() {
+            try {
+                const filter = document.getElementById('historyFilter').value;
+                const response = await fetch(`${API_BASE_URL}/student/history/${currentUser.id}?filter=${filter}`);
+                currentHistoryData = await response.json();
+                
+                displayHistory(currentHistoryData);
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function displayHistory(data) {
+            const historyBody = document.getElementById('historyBody');
+            historyBody.innerHTML = data.map(record => `
+                <tr>
+                    <td>${record.bookTitle}</td>
+                    <td>${formatDate(record.borrowDate)}</td>
+                    <td>${formatDate(record.dueDate)}</td>
+                    <td>${record.returnDate ? formatDate(record.returnDate) : '-'}</td>
+                    <td><span class="status-badge status-${record.status.toLowerCase()}">${record.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Add formatDate function if it doesn't exist
+        function formatDate(dateString) {
+            if (!dateString) return 'No due date';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        // Handle history search
+        document.getElementById('historySearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredData = currentHistoryData.filter(record => 
+                record.bookTitle.toLowerCase().includes(searchTerm)
+            );
+            displayHistory(filteredData);
+        });
+
+        // Handle history sorting
+        document.querySelectorAll('.history-table th[data-sort]').forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.dataset.sort;
+                const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+                
+                // Update sort indicators
+                document.querySelectorAll('.history-table th').forEach(th => {
+                    th.removeAttribute('data-sort');
+                });
+                this.setAttribute('data-sort', direction);
+                
+                // Sort data
+                const sortedData = [...currentHistoryData].sort((a, b) => {
+                    let aValue = a[column];
+                    let bValue = b[column];
+                    
+                    // Handle date sorting
+                    if (column.includes('Date')) {
+                        aValue = aValue ? new Date(aValue) : new Date(0);
+                        bValue = bValue ? new Date(bValue) : new Date(0);
+                    }
+                    
+                    // Handle null values and undefined
+                    if (aValue === null || aValue === undefined) aValue = '';
+                    if (bValue === null || bValue === undefined) bValue = '';
+                    
+                    // Convert to strings for comparison
+                    aValue = String(aValue).toLowerCase();
+                    bValue = String(bValue).toLowerCase();
+                    
+                    // Compare values
+                    if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                currentSort = { column, direction };
+                displayHistory(sortedData);
+            });
+        });
+
+        // Handle history filter change
+        document.getElementById('historyFilter').addEventListener('change', loadHistory);
+
+        // Update reading trend chart
+        function updateReadingTrendChart(data) {
+            const ctx = document.getElementById('readingTrendChart').getContext('2d');
+            const existingChart = Chart.getChart(ctx);
+            
+            // Destroy existing chart if it exists
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Books Read',
+                        data: data.values,
+                        borderColor: '#1976d2',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle book borrowing
+        async function borrowBook(bookId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/student/borrow`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        studentId: currentUser.id,
+                        bookId: bookId
+                    })
+                });
+
+                if (response.ok) {
+                    showModal('Book borrowed successfully!', 'success');
+                    // Refresh both dashboard and points data
+                    await loadDashboardData();
+                    await loadPointsData();
+                    await loadHistory();
+                } else {
+                    const error = await response.json();
+                    showModal(error.message || 'Failed to borrow book', 'error');
+                }
+            } catch (error) {
+                console.error('Error borrowing book:', error);
+                showModal('Failed to borrow book', 'error');
+            }
+        }
+
+        // Handle logout
+        function logout() {
+            localStorage.removeItem('userData');
+            window.location.href = 'login.html';
+        }
+
+        // Add error handling for fetch requests
+        async function fetchWithTimeout(resource, options = {}) {
+            const timeout = options.timeout || 5000; // 5 second timeout
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(resource, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(id);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                clearTimeout(id);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timed out');
+                }
+                throw error;
+            }
+        }
+    </script>
+</body>
+</html>
